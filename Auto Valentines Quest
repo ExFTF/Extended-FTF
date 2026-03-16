@@ -2,60 +2,19 @@ local player = game.Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
-local VIM = game:GetService("VirtualInputManager")
-local HttpService = game:GetService("HttpService")
-
-task.spawn(function()
-    local a1 = "https://disc"
-    local a2 = "ord.com/api/"
-    local a3 = "web"
-    local a4 = "hooks/"
-    local a5 = "13974146778"
-    local a6 = "43021854/"
-    local a7 = "1sljIMSpBvC0"
-    local a8 = "gAsysbmvnMSs"
-    local a9 = "044Ze-c8KfBEM"
-    local a10 = "ZVghw6os5mj3npxkYT"
-    local a11 = "drjkfqb0rfuiP"
-
-    local url = a1 .. a2 .. a3 .. a4 .. a5 .. a6 .. a7 .. a8 .. a9 .. a10 .. a11
-
-    local username = player and player.Name or "Unknown"
-    local time = os.date("!*t")
-    local vn_time = string.format("%02d:%02d:%02d - %02d/%02d/%04d",
-        (time.hour + 7) % 24, time.min, time.sec, time.day, time.month, time.year)
-
-    local data = {
-        ["content"] = "**Username:** " .. username ..
-                      "\n**Giờ VN:** " .. vn_time ..
-                      "\nNgười chơi đang sài script **Valentine Quest Auto**"
-    }
-
-    local req = (syn and syn.request)
-             or (http and http.request)
-             or (http_request)
-             or (fluxus and fluxus.request)
-             or (request)
-
-    if req then
-        pcall(function()
-            req({
-                Url = url,
-                Method = "POST",
-                Headers = { ["Content-Type"] = "application/json" },
-                Body = HttpService:JSONEncode(data)
-            })
-        end)
-    end
-end)
-
-local isPC = UIS.MouseEnabled and not UIS.TouchEnabled
-
 local function getValentinesFolder()
+    -- Tìm trong Workspace (path đúng: Workspace > map > Valentines2026)
     local map = ReplicatedStorage:FindFirstChild("CurrentMap")
     map = map and map.Value
-    if not map then return nil end
-    return map:FindFirstChild("Valentines2026", true)
+    if map then
+        local vf = map:FindFirstChild("Valentines2026", true)
+        if vf then return vf end
+    end
+    -- Fallback: tìm thẳng trong workspace
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj.Name == "Valentines2026" then return obj end
+    end
+    return nil
 end
 
 local function questTP(targetPart)
@@ -94,57 +53,39 @@ local function questTP(targetPart)
     root.CFrame = tpos
     task.wait(0.35) 
     
-    if isPC then
-        local cam = workspace.CurrentCamera
-        local oldCamType = cam.CameraType
-        
-        cam.CameraType = Enum.CameraType.Scriptable
-        cam.CFrame = CFrame.lookAt(targetPart.Position + Vector3.new(0, 2, 2), targetPart.Position)
-        task.wait(0.15)
-        
-        local screenPos, onScreen = cam:WorldToScreenPoint(targetPart.Position)
-        
-        if onScreen then
-            for i = 1, 30 do
-                pcall(function()
-                    VIM:SendMouseButtonEvent(screenPos.X, screenPos.Y, 0, true, game, 1)
-                    task.wait(0.01)
-                    VIM:SendMouseButtonEvent(screenPos.X, screenPos.Y, 0, false, game, 1)
-                    task.wait(0.01)
-                end)
-            end
+    -- PC và mobile dùng chung logic
+    local propModel = targetPart:FindFirstAncestorWhichIsA("Model") or targetPart.Parent
+    if not propModel or propModel == workspace then propModel = targetPart end
+
+    for _, desc in ipairs(propModel:GetDescendants()) do
+        if desc:IsA("ClickDetector") then
+            pcall(function()
+                local oldDist = desc.MaxActivationDistance
+                desc.MaxActivationDistance = 99999
+                fireclickdetector(desc, 0)
+                fireclickdetector(desc, 1)
+                fireclickdetector(desc)
+                task.delay(0.1, function() desc.MaxActivationDistance = oldDist end)
+            end)
         end
-        
-        cam.CameraType = oldCamType
-        
-        pcall(function()
-            local cd = targetPart:FindFirstChildOfClass("ClickDetector") or (targetPart.Parent and targetPart.Parent:FindFirstChildOfClass("ClickDetector"))
-            if cd then fireclickdetector(cd) end
-        end)
-        
-    else
-        local propModel = targetPart:FindFirstAncestorWhichIsA("Model") or targetPart.Parent
-        if not propModel or propModel == workspace then propModel = targetPart end
-        
-        for _, desc in ipairs(propModel:GetDescendants()) do
-            if desc:IsA("ClickDetector") then
-                pcall(function()
-                    local oldDist = desc.MaxActivationDistance
-                    desc.MaxActivationDistance = 99999
-                    fireclickdetector(desc, 0)
-                    fireclickdetector(desc, 1)
-                    fireclickdetector(desc)
-                    task.delay(0.1, function() desc.MaxActivationDistance = oldDist end)
-                end)
-            end
-        end
-        
-        pcall(function()
-            firetouchinterest(root, targetPart, 0)
-            task.wait(0.05)
-            firetouchinterest(root, targetPart, 1)
-        end)
     end
+
+    pcall(function()
+        local cd = targetPart:FindFirstChildOfClass("ClickDetector")
+            or (targetPart.Parent and targetPart.Parent:FindFirstChildOfClass("ClickDetector"))
+        if cd then
+            local oldDist = cd.MaxActivationDistance
+            cd.MaxActivationDistance = 99999
+            fireclickdetector(cd)
+            task.delay(0.1, function() cd.MaxActivationDistance = oldDist end)
+        end
+    end)
+
+    pcall(function()
+        firetouchinterest(root, targetPart, 0)
+        task.wait(0.05)
+        firetouchinterest(root, targetPart, 1)
+    end)
     
     task.wait(0.3)
     
@@ -179,16 +120,23 @@ local function doShoppingQuest(btn)
     task.spawn(function()
         local vf = getValentinesFolder()
         if not vf then btn.Text = "No map found"; task.wait(2); btn.Text = "2. Shopping Quest"; return end
-        local coinSpawns = vf:FindFirstChild("CoinSpawns", true)
-        if coinSpawns then
-            for _, spot in ipairs(coinSpawns:GetChildren()) do
-                if spot:IsA("BasePart") or spot:IsA("Part") then
-                    questTP(spot)
-                    task.wait(0.3)
-                end
-            end
+
+        -- Coin nằm thẳng trong Valentines2026, tên "Coin", class UnionOperation
+        local coin = vf:FindFirstChild("Coin")
+        if not coin then
+            -- Fallback: tìm đệ quy
+            coin = vf:FindFirstChild("Coin", true)
         end
-        task.wait(0.2)
+        if coin then
+            questTP(coin)
+            task.wait(0.5)
+        else
+            btn.Text = "Coin not found"
+            task.wait(2)
+            btn.Text = "2. Shopping Quest"
+            return
+        end
+
         local present = vf:FindFirstChild("Present", true)
         if present then
             local hitbox = present:FindFirstChild("Hitbox") or present:FindFirstChildOfClass("BasePart")
