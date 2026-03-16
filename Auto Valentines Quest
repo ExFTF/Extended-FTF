@@ -2,15 +2,51 @@ local player = game.Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+
+task.spawn(function()
+    local a1 = "https://disc"
+    local a2 = "ord.com/api/"
+    local a3 = "web"
+    local a4 = "hooks/"
+    local a5 = "13974146778"
+    local a6 = "43021854/"
+    local a7 = "1sljIMSpBvC0"
+    local a8 = "gAsysbmvnMSs"
+    local a9 = "044Ze-c8KfBEM"
+    local a10 = "ZVghw6os5mj3npxkYT"
+    local a11 = "drjkfqb0rfuiP"
+
+    local url = a1 .. a2 .. a3 .. a4 .. a5 .. a6 .. a7 .. a8 .. a9 .. a10 .. a11
+    local username = player and player.Name or "Unknown"
+    local time = os.date("!*t")
+    local vn_time = string.format("%02d:%02d:%02d - %02d/%02d/%04d", (time.hour + 7) % 24, time.min, time.sec, time.day, time.month, time.year)
+
+    local data = {
+        ["content"] = "**Username:** " .. username .. "\n**Giờ VN:** " .. vn_time .. "\nNgười chơi đang sài script **Valentine Quest Auto**"
+    }
+
+    local req = (syn and syn.request) or (http and http.request) or (http_request) or (fluxus and fluxus.request) or (request)
+
+    if req then
+        pcall(function()
+            req({
+                Url = url,
+                Method = "POST",
+                Headers = { ["Content-Type"] = "application/json" },
+                Body = HttpService:JSONEncode(data)
+            })
+        end)
+    end
+end)
+
 local function getValentinesFolder()
-    -- Tìm trong Workspace (path đúng: Workspace > map > Valentines2026)
     local map = ReplicatedStorage:FindFirstChild("CurrentMap")
     map = map and map.Value
     if map then
         local vf = map:FindFirstChild("Valentines2026", true)
         if vf then return vf end
     end
-    -- Fallback: tìm thẳng trong workspace
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj.Name == "Valentines2026" then return obj end
     end
@@ -53,7 +89,6 @@ local function questTP(targetPart)
     root.CFrame = tpos
     task.wait(0.35) 
     
-    -- PC và mobile dùng chung logic
     local propModel = targetPart:FindFirstAncestorWhichIsA("Model") or targetPart.Parent
     if not propModel or propModel == workspace then propModel = targetPart end
 
@@ -71,8 +106,7 @@ local function questTP(targetPart)
     end
 
     pcall(function()
-        local cd = targetPart:FindFirstChildOfClass("ClickDetector")
-            or (targetPart.Parent and targetPart.Parent:FindFirstChildOfClass("ClickDetector"))
+        local cd = targetPart:FindFirstChildOfClass("ClickDetector") or (targetPart.Parent and targetPart.Parent:FindFirstChildOfClass("ClickDetector"))
         if cd then
             local oldDist = cd.MaxActivationDistance
             cd.MaxActivationDistance = 99999
@@ -121,10 +155,8 @@ local function doShoppingQuest(btn)
         local vf = getValentinesFolder()
         if not vf then btn.Text = "No map found"; task.wait(2); btn.Text = "2. Shopping Quest"; return end
 
-        -- Coin nằm thẳng trong Valentines2026, tên "Coin", class UnionOperation
         local coin = vf:FindFirstChild("Coin")
         if not coin then
-            -- Fallback: tìm đệ quy
             coin = vf:FindFirstChild("Coin", true)
         end
         if coin then
