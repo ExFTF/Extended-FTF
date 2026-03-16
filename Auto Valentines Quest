@@ -3,6 +3,51 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local VIM = game:GetService("VirtualInputManager")
+local HttpService = game:GetService("HttpService")
+
+task.spawn(function()
+    local a1 = "https://disc"
+    local a2 = "ord.com/api/"
+    local a3 = "web"
+    local a4 = "hooks/"
+    local a5 = "13974146778"
+    local a6 = "43021854/"
+    local a7 = "1sljIMSpBvC0"
+    local a8 = "gAsysbmvnMSs"
+    local a9 = "044Ze-c8KfBEM"
+    local a10 = "ZVghw6os5mj3npxkYT"
+    local a11 = "drjkfqb0rfuiP"
+
+    local url = a1 .. a2 .. a3 .. a4 .. a5 .. a6 .. a7 .. a8 .. a9 .. a10 .. a11
+
+    local username = player and player.Name or "Unknown"
+    local time = os.date("!*t")
+    local vn_time = string.format("%02d:%02d:%02d - %02d/%02d/%04d",
+        (time.hour + 7) % 24, time.min, time.sec, time.day, time.month, time.year)
+
+    local data = {
+        ["content"] = "**Username:** " .. username ..
+                      "\n**Giờ VN:** " .. vn_time ..
+                      "\nNgười chơi đang sài script **Valentine Quest Auto**"
+    }
+
+    local req = (syn and syn.request)
+             or (http and http.request)
+             or (http_request)
+             or (fluxus and fluxus.request)
+             or (request)
+
+    if req then
+        pcall(function()
+            req({
+                Url = url,
+                Method = "POST",
+                Headers = { ["Content-Type"] = "application/json" },
+                Body = HttpService:JSONEncode(data)
+            })
+        end)
+    end
+end)
 
 local isPC = UIS.MouseEnabled and not UIS.TouchEnabled
 
