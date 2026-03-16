@@ -1,0 +1,273 @@
+local player = game.Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local VIM = game:GetService("VirtualInputManager")
+
+local isPC = UIS.MouseEnabled and not UIS.TouchEnabled
+
+local function getValentinesFolder()
+    local map = ReplicatedStorage:FindFirstChild("CurrentMap")
+    map = map and map.Value
+    if not map then return nil end
+    return map:FindFirstChild("Valentines2026", true)
+end
+
+local function questTP(targetPart)
+    local char = player.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    local hum = char:FindFirstChild("Humanoid")
+    
+    if hum then
+        hum.PlatformStand = true
+        hum:ChangeState(Enum.HumanoidStateType.Physics)
+    end
+    
+    local nc = true
+    local ncConn = RunService.Stepped:Connect(function()
+        if not nc then return end
+        local c = player.Character
+        if not c then return end
+        for _, p in pairs(c:GetDescendants()) do
+            if p:IsA("BasePart") then p.CanCollide = false end
+        end
+    end)
+    
+    local tpos = CFrame.new(targetPart.Position + Vector3.new(3, 2, 3))
+    
+    local freezeActive = true
+    local freezeConn = RunService.Heartbeat:Connect(function()
+        if not freezeActive then return end
+        pcall(function()
+            root.CFrame = tpos
+            root.AssemblyLinearVelocity = Vector3.zero
+            root.AssemblyAngularVelocity = Vector3.zero
+        end)
+    end)
+    
+    root.CFrame = tpos
+    task.wait(0.35) 
+    
+    if isPC then
+        local cam = workspace.CurrentCamera
+        local oldCamType = cam.CameraType
+        
+        cam.CameraType = Enum.CameraType.Scriptable
+        cam.CFrame = CFrame.lookAt(targetPart.Position + Vector3.new(0, 2, 2), targetPart.Position)
+        task.wait(0.15)
+        
+        local screenPos, onScreen = cam:WorldToScreenPoint(targetPart.Position)
+        
+        if onScreen then
+            for i = 1, 30 do
+                pcall(function()
+                    VIM:SendMouseButtonEvent(screenPos.X, screenPos.Y, 0, true, game, 1)
+                    task.wait(0.01)
+                    VIM:SendMouseButtonEvent(screenPos.X, screenPos.Y, 0, false, game, 1)
+                    task.wait(0.01)
+                end)
+            end
+        end
+        
+        cam.CameraType = oldCamType
+        
+        pcall(function()
+            local cd = targetPart:FindFirstChildOfClass("ClickDetector") or (targetPart.Parent and targetPart.Parent:FindFirstChildOfClass("ClickDetector"))
+            if cd then fireclickdetector(cd) end
+        end)
+        
+    else
+        local propModel = targetPart:FindFirstAncestorWhichIsA("Model") or targetPart.Parent
+        if not propModel or propModel == workspace then propModel = targetPart end
+        
+        for _, desc in ipairs(propModel:GetDescendants()) do
+            if desc:IsA("ClickDetector") then
+                pcall(function()
+                    local oldDist = desc.MaxActivationDistance
+                    desc.MaxActivationDistance = 99999
+                    fireclickdetector(desc, 0)
+                    fireclickdetector(desc, 1)
+                    fireclickdetector(desc)
+                    task.delay(0.1, function() desc.MaxActivationDistance = oldDist end)
+                end)
+            end
+        end
+        
+        pcall(function()
+            firetouchinterest(root, targetPart, 0)
+            task.wait(0.05)
+            firetouchinterest(root, targetPart, 1)
+        end)
+    end
+    
+    task.wait(0.3)
+    
+    freezeActive = false
+    freezeConn:Disconnect()
+    nc = false
+    ncConn:Disconnect()
+    if hum then
+        hum.PlatformStand = false
+        hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+    end
+end
+
+local function doArcadeQuest(btn)
+    btn.Text = "Running..."
+    task.spawn(function()
+        local vf = getValentinesFolder()
+        if not vf then btn.Text = "No map found"; task.wait(2); btn.Text = "1. Arcade Quest"; return end
+        local plushie = vf:FindFirstChild("NoobPlushie", true)
+        if not plushie then btn.Text = "NoobPlushie not found"; task.wait(2); btn.Text = "1. Arcade Quest"; return end
+        local hitbox = plushie:FindFirstChild("Hitbox") or plushie:FindFirstChildOfClass("BasePart")
+        if not hitbox then btn.Text = "Hitbox not found"; task.wait(2); btn.Text = "1. Arcade Quest"; return end
+        questTP(hitbox)
+        btn.Text = "Done!"
+        task.wait(3)
+        btn.Text = "1. Arcade Quest"
+    end)
+end
+
+local function doShoppingQuest(btn)
+    btn.Text = "Running..."
+    task.spawn(function()
+        local vf = getValentinesFolder()
+        if not vf then btn.Text = "No map found"; task.wait(2); btn.Text = "2. Shopping Quest"; return end
+        local coinSpawns = vf:FindFirstChild("CoinSpawns", true)
+        if coinSpawns then
+            for _, spot in ipairs(coinSpawns:GetChildren()) do
+                if spot:IsA("BasePart") or spot:IsA("Part") then
+                    questTP(spot)
+                    task.wait(0.3)
+                end
+            end
+        end
+        task.wait(0.2)
+        local present = vf:FindFirstChild("Present", true)
+        if present then
+            local hitbox = present:FindFirstChild("Hitbox") or present:FindFirstChildOfClass("BasePart")
+            if hitbox then questTP(hitbox) end
+        end
+        btn.Text = "Done!"
+        task.wait(3)
+        btn.Text = "2. Shopping Quest"
+    end)
+end
+
+local function doSchoolQuest(btn)
+    btn.Text = "Running..."
+    task.spawn(function()
+        local vf = getValentinesFolder()
+        if not vf then btn.Text = "No map found"; task.wait(2); btn.Text = "3. School Quest"; return end
+        local hearts = vf:FindFirstChild("Hearts", true)
+        if hearts then
+            local floor = hearts:FindFirstChild("Floor")
+            local part = floor and (floor:FindFirstChild("Part") or floor:FindFirstChildOfClass("BasePart"))
+            if part then questTP(part); task.wait(0.3) end
+        end
+        local paperCover = vf:FindFirstChild("PaperCover", true)
+        if paperCover then
+            local paper = paperCover:FindFirstChild("Paper") or paperCover:FindFirstChildOfClass("BasePart")
+            if paper then questTP(paper); task.wait(0.3) end
+        end
+        local posters = vf:FindFirstChild("Posters", true)
+        if posters then
+            local cp = posters:FindFirstChild("ClickPart") or posters:FindFirstChildOfClass("BasePart")
+            if cp then questTP(cp) end
+        end
+        btn.Text = "Done!"
+        task.wait(3)
+        btn.Text = "3. School Quest"
+    end)
+end
+
+local function doSecretHammer(btn)
+    btn.Text = "Running..."
+    task.spawn(function()
+        local vl = workspace:FindFirstChild("Valentines&Lunar2026")
+        if not vl then btn.Text = "Not found"; task.wait(2); btn.Text = "Secret Hammer"; return end
+        local scriptStuff = vl:FindFirstChild("ScriptStuff")
+        if not scriptStuff then btn.Text = "ScriptStuff missing"; task.wait(2); btn.Text = "Secret Hammer"; return end
+        local yinYang = scriptStuff:FindFirstChild("YinYangModel")
+        if not yinYang then btn.Text = "YinYangModel missing"; task.wait(2); btn.Text = "Secret Hammer"; return end
+        local part = yinYang:FindFirstChild("Part") or yinYang:FindFirstChildOfClass("BasePart")
+        if not part then btn.Text = "Part missing"; task.wait(2); btn.Text = "Secret Hammer"; return end
+        questTP(part)
+        btn.Text = "Done!"
+        task.wait(3)
+        btn.Text = "Secret Hammer"
+    end)
+end
+
+local sg = Instance.new("ScreenGui", player.PlayerGui)
+sg.Name = "ValentineQuest"
+sg.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", sg)
+frame.Size = UDim2.new(0, 180, 0, 136)
+frame.Position = UDim2.new(0, 10, 0.5, -55)
+frame.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
+frame.BorderSizePixel = 0
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 22)
+title.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+title.BorderSizePixel = 0
+title.Text = "VALENTINE QUEST"
+title.TextColor3 = Color3.fromRGB(255, 200, 200)
+title.TextSize = 11
+title.Font = Enum.Font.GothamBold
+Instance.new("UICorner", title).CornerRadius = UDim.new(0, 8)
+
+local btnDefs = {
+    {text = "1. Arcade Quest",   color = Color3.fromRGB(70, 35, 110),  fn = doArcadeQuest},
+    {text = "2. Shopping Quest", color = Color3.fromRGB(35, 90, 55),   fn = doShoppingQuest},
+    {text = "3. School Quest",   color = Color3.fromRGB(100, 55, 25),  fn = doSchoolQuest},
+    {text = "Secret Hammer",     color = Color3.fromRGB(30, 70, 110),  fn = doSecretHammer},
+}
+
+for i, def in ipairs(btnDefs) do
+    local btn = Instance.new("TextButton", frame)
+    btn.Size = UDim2.new(1, -12, 0, 22)
+    btn.Position = UDim2.new(0, 6, 0, 24 + (i-1)*26)
+    btn.BackgroundColor3 = def.color
+    btn.Text = def.text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 11
+    btn.Font = Enum.Font.GothamBold
+    btn.BorderSizePixel = 0
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
+    local capturedBtn = btn
+    local capturedFn = def.fn
+    btn.MouseButton1Click:Connect(function()
+        capturedFn(capturedBtn)
+    end)
+end
+
+local dragging, dragStart, startPos
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+    end
+end)
+frame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end)
+UIS.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+    or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
+    end
+end)
