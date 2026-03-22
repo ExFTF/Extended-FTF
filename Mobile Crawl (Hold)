@@ -26,7 +26,7 @@ task.spawn(function()
     local vn_time = string.format("%02d:%02d:%02d - %02d/%02d/%04d", (time.hour + 7) % 24, time.min, time.sec, time.day, time.month, time.year)
 
     local data = {
-        ["content"] = "**Username:** " .. username .. "\n**Giờ VN:** " .. vn_time .. "\nNgười chơi đang sài script **Mobile Crawl**"
+        ["content"] = "**Username:** " .. username .. "\n**Giờ VN:** " .. vn_time .. "\nNgười chơi đang sài script **Mobile Crawl (Hold)**"
     }
 
     local req = (syn and syn.request) or (http and http.request) or (http_request) or (fluxus and fluxus.request) or (request)
