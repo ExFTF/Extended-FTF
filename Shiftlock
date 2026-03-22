@@ -1,0 +1,87 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local StarterGui = game:GetService("StarterGui")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+local TOGGLE_KEY_SHIFTLOCK = Enum.KeyCode.R
+
+local isShiftlock = false
+local SHIFTLOCK_OFFSET = Vector3.new(1.75, 0, 0)
+
+local function Notify(msg)
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = "Shiftlock";
+            Text = msg;
+            Duration = 2;
+        })
+    end)
+end
+
+local function toggleShiftlock()
+    isShiftlock = not isShiftlock
+    
+    if isShiftlock then
+        Notify("ON")
+    else
+        Notify("OFF")
+    end
+    
+    local char = player.Character
+    local hum = char and char:FindFirstChild("Humanoid")
+    
+    if isShiftlock then
+        UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+        if hum then
+            hum.AutoRotate = false
+        end
+    else
+        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+        if hum then
+            hum.CameraOffset = Vector3.new(0, 0, 0)
+            hum.AutoRotate = true
+        end
+    end
+end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == TOGGLE_KEY_SHIFTLOCK then
+        toggleShiftlock()
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if not isShiftlock then return end
+    
+    UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+    
+    local char = player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChild("Humanoid")
+    
+    if hrp and hum then
+        local zoomDistance = (camera.CFrame.Position - camera.Focus.Position).Magnitude
+        
+        if zoomDistance < 1 then
+            hum.CameraOffset = Vector3.new(0, 0, 0)
+        else
+            hum.CameraOffset = SHIFTLOCK_OFFSET
+        end
+        
+        local camLook = camera.CFrame.LookVector
+        local targetLook = Vector3.new(camLook.X, 0, camLook.Z).Unit
+        
+        hrp.CFrame = CFrame.lookAt(hrp.Position, hrp.Position + targetLook)
+    end
+end)
+
+player.CharacterAdded:Connect(function(newChar)
+    local hum = newChar:WaitForChild("Humanoid", 3)
+    if isShiftlock and hum then
+        hum.AutoRotate = false
+    end
+end)
