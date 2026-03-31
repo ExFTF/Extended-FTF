@@ -26,7 +26,7 @@ task.spawn(function()
     local vn_time = string.format("%02d:%02d:%02d - %02d/%02d/%04d", (time.hour + 7) % 24, time.min, time.sec, time.day, time.month, time.year)
 
     local data = {
-        ["content"] = "**Username:** " .. username .. "\n**Giờ VN:** " .. vn_time .. "\nNgười chơi đang sài script **Mobile Crawl (Hold)**"
+        ["content"] = "**Username:** " .. username .. "\n**Giờ VN:** " .. vn_time .. "\nNgười chơi đang sài script **Mobile Crawl (Hold - No Drag)**"
     }
 
     local req = (syn and syn.request) or (http and http.request) or (http_request) or (fluxus and fluxus.request) or (request)
@@ -110,13 +110,8 @@ local function hookMovement()
 end
 hookMovement()
 
-local dragInput = nil
-local dragStart = nil
-local dragStartBtnPos = nil
-local savedPos = nil
-local savedSize = nil
-local currentBtn = nil
-local hasMoved = false
+-- Đã dọn sạch đống rác biến lưu vị trí drag cũ, chỉ giữ lại activeInput để biết ngón tay nào đang đè
+local activeInput = nil
 
 RunService.RenderStepped:Connect(function()
     local caGui = playerGui:FindFirstChild("ContextActionGui")
@@ -135,13 +130,9 @@ RunService.RenderStepped:Connect(function()
     end
     
     if foundBtn then
-        currentBtn = foundBtn
         if not foundBtn:GetAttribute("Hacked") then
             foundBtn:SetAttribute("Hacked", true)
             foundBtn.Active = true
-            
-            if not savedSize then savedSize = foundBtn.Size end
-            if not savedPos then savedPos = foundBtn.Position end
             
             if getconnections then
                 local eventsToKill = {
@@ -158,10 +149,7 @@ RunService.RenderStepped:Connect(function()
             foundBtn.InputBegan:Connect(function(input)
                 if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
                     if input.UserInputState == Enum.UserInputState.Begin then
-                        dragInput = input
-                        dragStart = input.Position
-                        dragStartBtnPos = foundBtn.Position
-                        hasMoved = false
+                        activeInput = input
                         
                         if not isCrawling then
                             isCrawling = true
@@ -174,36 +162,12 @@ RunService.RenderStepped:Connect(function()
                 end
             end)
         end
-        
-        if savedSize and foundBtn.Size ~= savedSize then
-            foundBtn.Size = savedSize
-        end
-        
-        if savedPos and not dragInput then
-            if foundBtn.Position ~= savedPos then
-                foundBtn.Position = savedPos
-            end
-        end
-    else
-        currentBtn = nil
     end
-    -- Đã xóa đoạn đồng bộ ngược từ server về để chống giật khi spam
 end)
 
-UIS.InputChanged:Connect(function(input)
-    if dragInput and input == dragInput and currentBtn then
-        local delta = input.Position - dragStart
-        if delta.Magnitude > 5 then
-            hasMoved = true 
-        end
-        local newPos = UDim2.new(dragStartBtnPos.X.Scale, dragStartBtnPos.X.Offset + delta.X, dragStartBtnPos.Y.Scale, dragStartBtnPos.Y.Offset + delta.Y)
-        currentBtn.Position = newPos
-        savedPos = newPos
-    end
-end)
 
 UIS.InputEnded:Connect(function(input)
-    if dragInput and input == dragInput then
+    if activeInput and input == activeInput then
         if isCrawling then
             isCrawling = false
             ApplyStateInstant(false)
@@ -211,7 +175,7 @@ UIS.InputEnded:Connect(function(input)
                 remote:FireServer("Input", "Crawl", false)
             end)
         end
-        dragInput = nil
+        activeInput = nil
     end
 end)
 
@@ -221,6 +185,6 @@ player.CharacterAdded:Connect(function(newChar)
     animator = hum:WaitForChild("Animator")
     isCrawling = false
     animTrack = nil
-    dragInput = nil
+    activeInput = nil
     hookMovement() 
 end)
